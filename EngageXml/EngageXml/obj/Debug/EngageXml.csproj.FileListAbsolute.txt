@@ -1,0 +1,14 @@
+D:\Developer\EngageXml\EngageXml\bin\Debug\EngageXml.exe.config
+D:\Developer\EngageXml\EngageXml\bin\Debug\EngageXml.exe
+D:\Developer\EngageXml\EngageXml\bin\Debug\EngageXml.pdb
+D:\Developer\EngageXml\EngageXml\bin\Debug\EPPlus.dll
+D:\Developer\EngageXml\EngageXml\bin\Debug\EPPlus.Interfaces.dll
+D:\Developer\EngageXml\EngageXml\bin\Debug\EPPlus.System.Drawing.dll
+D:\Developer\EngageXml\EngageXml\bin\Debug\Microsoft.IO.RecyclableMemoryStream.dll
+D:\Developer\EngageXml\EngageXml\bin\Debug\EPPlus.xml
+D:\Developer\EngageXml\EngageXml\bin\Debug\Microsoft.IO.RecyclableMemoryStream.xml
+D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.csproj.AssemblyReference.cache
+D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.csproj.CoreCompileInputs.cache
+D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.csproj.CopyComplete
+D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.exe
+D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.pdb
