@@ -12,3 +12,8 @@ D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.csproj.CoreCompileInputs.ca
 D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.csproj.CopyComplete
 D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.exe
 D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.pdb
+D:\Developer\EngageXml\EngageXml\bin\Debug\AssetsTools.NET.dll
+D:\Developer\EngageXml\EngageXml\bin\Debug\Mono.Cecil.dll
+D:\Developer\EngageXml\EngageXml\bin\Debug\Mono.Cecil.Mdb.dll
+D:\Developer\EngageXml\EngageXml\bin\Debug\Mono.Cecil.Pdb.dll
+D:\Developer\EngageXml\EngageXml\bin\Debug\Mono.Cecil.Rocks.dll
