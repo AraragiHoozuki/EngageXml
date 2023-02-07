@@ -1,5 +1,5 @@
 # EngageXml
-An xml2xlsx, xlsx2xml tool for Fire Emblem Engage game data.
+An extracting, rebundling, xml2xlsx and xlsx2xml tool for Fire Emblem Engage game data.
 
 ## Usage
 
