@@ -3,7 +3,7 @@ An extracting, rebundling, xml2xlsx and xlsx2xml tool for Fire Emblem Engage gam
 
 ## Usage
 
-**If your files are not in the same folder as EngageXml.exe, type their full path in cmd. Eg. `EngageXml.exe -out "C:\Users\[UserName]\AppData\Roaming\Ryujinx\mods\contents\0100a6301214e000\ModName\romfs\Data\StreamingAssets\aa\Switch\fe_assets_gamedata\%~n1.bundle"`**
+**If your files are not in the same folder as EngageXml.exe, type their full path in cmd. Eg. `EngageXml.exe -out "C:\Users\[UserName]\AppData\Roaming\Ryujinx\mods\contents\0100a6301214e000\ModName\romfs\Data\StreamingAssets\aa\Switch\fe_assets_gamedata\skill.xml.bundle"`**
 
 - `EngageXml.exe *.xml` : convert \*.xml to \*.xml.xlsx
   
