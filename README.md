@@ -18,4 +18,4 @@ An extracting, rebundling, xml2xlsx and xlsx2xml tool for Fire Emblem Engage gam
 - `EngageXml.exe -in *.xlsx *.xml.bundle` : convert *.xlsx to xml and insert it to bundle, replacing its original TextAsset
 
 
-## Do not change sheets names, but you can create new sheets with a name starts with "#", these sheets are ignored when converted to xml.
+## Do not change sheets names if you want convert them back to xml, but you can create new sheets with a name starts with "#", these sheets are skipped when converted to xml.
