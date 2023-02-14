@@ -15,10 +15,14 @@ namespace EngageXml
         static AssetsManager AM;
         static void Main(string[] args)
         {
+            if (args.Length < 1)
+            {
+                throw new Exception("Please excute this program with arguments.");
+            }
             string arg1 = args[0];
+            AM = new AssetsManager();
             if (arg1.StartsWith("-"))
             {
-                AM = new AssetsManager();
                 switch(arg1) {
                     case "-in":
                         string dataPath = args[1];
@@ -32,6 +36,15 @@ namespace EngageXml
                         } else
                         {
                             ExtractAsset(args[1], false);
+                        }
+                        break;
+                    case "-update":
+                        if(args[1] == "-o")
+                        {
+                            InsertAsset(ModUpdate(args[2], args[3], true), args[3]);
+                        } else
+                        {
+                            InsertAsset(ModUpdate(args[1], args[2], false), args[2]);
                         }
                         break;
                     default:
@@ -52,7 +65,10 @@ namespace EngageXml
                 {
                     File.WriteAllBytes(Path.ChangeExtension(path, null), Xlsx2Xml(path));
                 }
-                else
+                else if (path.EndsWith(".bundle"))
+                {
+                    ExtractAsset(path, false);
+                } else
                 {
                     new Exception("Error: File format not supported!");
                 }
@@ -220,6 +236,78 @@ namespace EngageXml
             return xmlBytes;
         }
 
+        static byte[] ModUpdate(string source_path, string target_path, bool overwrite = true)
+        {
+            byte[] updatedBytes;
+            XmlDocument source_xml = new XmlDocument();
+            XmlDocument target_xml = new XmlDocument();
+            string xmlText = Encoding.UTF8.GetString(ReadBundleAssetData(target_path));
+            xmlText = xmlText.Substring(1, xmlText.Length - 1);
+            target_xml.LoadXml(xmlText);
+            if (source_path.EndsWith(".xml.bundle"))
+            {
+                xmlText = Encoding.UTF8.GetString(ReadBundleAssetData(source_path));
+                xmlText = xmlText.Substring(1, xmlText.Length - 1);
+                source_xml.LoadXml(xmlText);
+            } else if (source_path.EndsWith(".xml"))
+            {
+                source_xml.Load(source_path);
+            } else if (source_path.EndsWith(".xlsx"))
+            {
+                xmlText = Encoding.UTF8.GetString(Xlsx2Xml(source_path));
+                xmlText = xmlText.Substring(1, xmlText.Length - 1);
+                source_xml.LoadXml(xmlText);
+            }
+            XmlNode dataSrc = source_xml.DocumentElement.SelectSingleNode("/Book/Sheet/Data");
+            XmlNode dataTgt = target_xml.DocumentElement.SelectSingleNode("/Book/Sheet/Data");
+            Dictionary<string, XmlNode> dict = new Dictionary<string, XmlNode>();
+            foreach (XmlNode param in dataTgt.ChildNodes)
+            {
+                dict.Add(param.Attributes[1].Value, param);
+            }
+            foreach (XmlNode param in dataSrc.ChildNodes)
+            {
+                if (dict.ContainsKey(param.Attributes[1].Value))
+                {
+                    if (overwrite)
+                    {
+                        foreach (XmlAttribute attr in dict[param.Attributes[1].Value].Attributes)
+                        {
+                            attr.Value = param.Attributes[attr.Name].Value;
+                        }
+                    }
+                } else
+                {
+                    dataTgt.AppendChild(target_xml.ImportNode(param, false));
+                } 
+            }
+
+            using (MemoryStream ms = new MemoryStream())
+            {
+                target_xml.Save(ms);
+                updatedBytes = ms.ToArray();
+            }
+
+            AM.UnloadAllBundleFiles();
+            return updatedBytes;
+        }
+
+        static byte[]  ReadBundleAssetData(string bundlePath)
+        {
+            var bun = AM.LoadBundleFile(bundlePath);
+
+            //load first asset from bundle
+            var inst = AM.LoadAssetsFileFromBundle(bun, 0);
+            if (!inst.file.typeTree.hasTypeTree)
+                AM.LoadClassDatabaseFromPackage(inst.file.typeTree.unityVersion);
+            var inf = inst.table.assetFileInfo[0].index == 1 ? inst.table.assetFileInfo[1] : inst.table.assetFileInfo[0];
+            var baseField = AM.GetTypeInstance(inst, inf).GetBaseField();
+            byte[] data = baseField.Get("m_Script").GetValue().AsStringBytes();
+
+            AM.UnloadAll();
+            return data;
+        }
+
         static void InsertAsset(byte[] data, string bundlePath)
         {
             var bun = AM.LoadBundleFile(bundlePath);
@@ -264,21 +352,11 @@ namespace EngageXml
             {
                 bun.file.Pack(bun.file.reader, writer, AssetBundleCompressionType.LZ4);
             }
-
-            AM.UnloadAllBundleFiles();
         }
 
         static void ExtractAsset(string bundlePath, bool toXlsx) 
         {
-            var bun = AM.LoadBundleFile(bundlePath);
-
-            //load first asset from bundle
-            var inst = AM.LoadAssetsFileFromBundle(bun, 0);
-            if (!inst.file.typeTree.hasTypeTree)
-                AM.LoadClassDatabaseFromPackage(inst.file.typeTree.unityVersion);
-            var inf = inst.table.assetFileInfo[0].index == 1 ? inst.table.assetFileInfo[1] : inst.table.assetFileInfo[0];
-            var baseField = AM.GetTypeInstance(inst, inf).GetBaseField();
-            byte[] data = baseField.Get("m_Script").GetValue().AsStringBytes();
+            byte[] data = ReadBundleAssetData(bundlePath);
 
             if (!toXlsx)
             {
@@ -287,7 +365,6 @@ namespace EngageXml
             {
                 File.WriteAllBytes(Path.ChangeExtension(bundlePath, ".xlsx"), Xml2Xlsx(data));
             }
-
         }
     }
 }
