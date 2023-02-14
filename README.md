@@ -1,9 +1,8 @@
 # EngageXml
-火焰纹章 Engage 解包，打包工具
+火焰纹章 Engage 解包，打包工具。
+程序未经全面测试，自行斟酌使用
 
 ## 用法
-
-- **NEW** `EngageXml.exe -update [-o] *.xml|xlsx *.xml.bundle`: 用给定的 xml 或 xlsx 更新 bundle，以 Param 的第二个 Attribute（一般为 XID） 为依据，将 xml 或 xlsx 中存在，但 bundle 中不存在的条目添加进 bundle； 如果加上 `-o` 选项，则还会覆盖同 ID 的条目。  
 
 - **NEW** `EngageXml.exe *.bundle` （或将文件拖动到程序上）: 解包 bundle，支持 xml, txt, bytes(message).
 
