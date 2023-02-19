@@ -13,6 +13,8 @@ KEY, VALUE
 
 分隔符号 `,` 前后的空格会被无视
 
+MSBT 文件解析来自: https://github.com/IcySon55/3DLandMSBTeditor
+
 ## 用法
 
 - **NEW** `EngageXml.exe *.bundle` （或将文件拖动到程序上）: 解包 bundle，支持 xml, txt, bytes(message).
