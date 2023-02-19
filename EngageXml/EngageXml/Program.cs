@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Xml;
 
 namespace EngageXml
@@ -26,7 +27,17 @@ namespace EngageXml
                 switch(arg1) {
                     case "-in":
                         string dataPath = args[1];
-                        byte[] data = dataPath.EndsWith(".xlsx") ? Xlsx2Xml(dataPath): File.ReadAllBytes(dataPath);
+                        byte[] data;
+                        if (dataPath.EndsWith(".csv"))
+                        {
+                            data = UpdateMSBTWithCSV(dataPath, args[2]);
+                        } else if (dataPath.EndsWith(".xlsx"))
+                        {
+                            data = Xlsx2Xml(dataPath);
+                        } else
+                        {
+                            data = File.ReadAllBytes(dataPath);
+                        }
                         InsertAsset(data, args[2]);
                         break;
                     case "-out":
@@ -354,13 +365,52 @@ namespace EngageXml
             }
         }
 
+        static byte[] UpdateMSBTWithCSV(string csvPath, string bundlePath)
+        {
+            byte[] data = ReadBundleAssetData(bundlePath);
+            MSBT msbt = new MSBT(data);
+            using (var fs = new FileStream(csvPath, FileMode.Open))
+            using (var sr = new StreamReader(fs))
+            {
+                string[] kv;
+                string line, key, value;
+                line = sr.ReadLine();
+                while (line != null) 
+                {
+                    kv = line.Split(',');
+                    key = kv[0].Trim();
+                    value = kv[1].Trim();
+                    if (key.Length <= MSBT.LabelMaxLength && Regex.IsMatch(key, MSBT.LabelFilter))
+                    {
+                        Label lbl = msbt.HasLabel(key);
+                        if (lbl == null) lbl = msbt.AddLabel(key);
+                        if (value == "")
+                        {
+                            msbt.RemoveLabel(lbl);
+                        }
+                        else
+                        {
+                            IEntry ent = msbt.TXT2.Strings[(int)lbl.Index];
+                            ent.Value = msbt.FileEncoding.GetBytes(value.Replace("\r\n", "\n") + "\0");
+                        }
+                    } else
+                    {
+                        throw new Exception("Invalid Label!");
+                    }
+                    line = sr.ReadLine();
+                }
+            }
+            AM.UnloadBundleFile(bundlePath);
+            return msbt.Binarize();
+        }
+
         static void ExtractAsset(string bundlePath, bool toXlsx) 
         {
             byte[] data = ReadBundleAssetData(bundlePath);
 
             if (!toXlsx)
             {
-                File.WriteAllBytes(Path.ChangeExtension(bundlePath, null), data);
+                    File.WriteAllBytes(Path.ChangeExtension(bundlePath, null), data);
             } else
             {
                 File.WriteAllBytes(Path.ChangeExtension(bundlePath, ".xlsx"), Xml2Xlsx(data));
