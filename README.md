@@ -2,8 +2,8 @@
 火焰纹章 Engage 解包，打包工具。
 程序未经全面测试，自行斟酌使用
 
-## MSBT 支持
-`EngageXml.exe -in *.csv *.bundle` 可以将 csv 文件插入 msbt bundle 中。csv 文件应该如下书写：
+## 快速 Message 修改
+`EngageXml.exe -in *.csv *.bundle` 可以将 csv 文件插入 message bundle 中。csv 文件应该如下书写：
 
 ```csv
 KEY, VALUE
