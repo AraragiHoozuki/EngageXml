@@ -22,6 +22,7 @@
 |  GGID_マルス  | |
 |   | 1 |
 |   | 2 |
+
 则 Level 为 1，2的条目的 Ggid 也视为 GGID_マルス 
 
 ## 新增快速 Message 修改
