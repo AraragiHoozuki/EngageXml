@@ -195,7 +195,7 @@ namespace EngageXml
 		private byte paddingChar = 0xAB;
 
 		public static UInt32 LabelMaxLength = 64;
-		public static string LabelFilter = @"^[a-zA-Z0-9_]+$";
+		public static string LabelFilter = @"^[a-zA-Z0-9_#]+$";
 
 		public MSBT(byte[] data)
 		{

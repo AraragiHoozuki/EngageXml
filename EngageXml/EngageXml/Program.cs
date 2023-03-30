@@ -3,11 +3,13 @@ using AssetsTools.NET.Extra;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace EngageXml
 {
@@ -52,10 +54,10 @@ namespace EngageXml
                     case "-update":
                         if(args[1] == "-o")
                         {
-                            InsertAsset(ModUpdate(args[2], args[3], true), args[3]);
+                            InsertAsset(ModUpdate(args[2], args[3], true, args.Skip(4).ToArray()), args[3]);
                         } else
                         {
-                            InsertAsset(ModUpdate(args[1], args[2], false), args[2]);
+                            InsertAsset(ModUpdate(args[1], args[2], false, args.Skip(3).ToArray()), args[2]);
                         }
                         break;
                     default:
@@ -175,7 +177,7 @@ namespace EngageXml
                 var sheets = pkg.Workbook.Worksheets
                     .Where(sht => !sht.Name.EndsWith("Header"))
                     .Where(sht => !sht.Name.StartsWith("#"));
-
+                var i = pkg.Workbook.Worksheets.Count();
                 // XML 文件生成
                 XmlDocument xml = new XmlDocument();
                 xml.AppendChild(xml.CreateXmlDeclaration("1.0", "utf-8", null));
@@ -195,22 +197,26 @@ namespace EngageXml
 
                     // 写入 Book>Sheet>Header
                     var hsht = pkg.Workbook.Worksheets[sheet.Name + "Header"];
-                    var start = hsht.Dimension.Start;
-                    var end = hsht.Dimension.End;
-                    XmlElement nodeHeader = xml.CreateElement("Header");
-                    nodeSheet.AppendChild(nodeHeader);
+                    ExcelCellAddress start, end;
+                    if (hsht != null)
+                    {
+                        start = hsht.Dimension.Start;
+                        end = hsht.Dimension.End;
+                        XmlElement nodeHeader = xml.CreateElement("Header");
+                        nodeSheet.AppendChild(nodeHeader);
 
-                    for (int col = start.Column; col <= end.Column; col++)
-                    {
-                        paramAttrs.Add(hsht.Cells[1, col].Text);
-                    }
-                    for (int row = start.Row + 1; row <= end.Row; row++)
-                    {
-                        XmlElement nodeParam = xml.CreateElement("Param");
-                        nodeHeader.AppendChild(nodeParam);
                         for (int col = start.Column; col <= end.Column; col++)
                         {
-                            nodeParam.SetAttribute(paramAttrs[col - 1], hsht.Cells[row, col].Text);
+                            paramAttrs.Add(hsht.Cells[1, col].Text);
+                        }
+                        for (int row = start.Row + 1; row <= end.Row; row++)
+                        {
+                            XmlElement nodeParam = xml.CreateElement("Param");
+                            nodeHeader.AppendChild(nodeParam);
+                            for (int col = start.Column; col <= end.Column; col++)
+                            {
+                                nodeParam.SetAttribute(paramAttrs[col - 1], hsht.Cells[row, col].Text);
+                            }
                         }
                     }
 
@@ -247,55 +253,90 @@ namespace EngageXml
             return xmlBytes;
         }
 
-        static byte[] ModUpdate(string source_path, string target_path, bool overwrite = true)
+        static byte[] ModUpdate(string source_path, string target_path, bool overwrite = true, params string[] ids)
         {
             byte[] updatedBytes;
-            XmlDocument source_xml = new XmlDocument();
-            XmlDocument target_xml = new XmlDocument();
-            string xmlText = Encoding.UTF8.GetString(ReadBundleAssetData(target_path));
-            xmlText = xmlText.Substring(1, xmlText.Length - 1);
-            target_xml.LoadXml(xmlText);
+            XDocument src;
+            XDocument tgt;
+
+            string tgtText = Encoding.UTF8.GetString(ReadBundleAssetData(target_path));
+            tgtText = tgtText.Substring(1, tgtText.Length - 1);
+            tgt = XDocument.Parse(tgtText);
+
             if (source_path.EndsWith(".xml.bundle"))
             {
-                xmlText = Encoding.UTF8.GetString(ReadBundleAssetData(source_path));
-                xmlText = xmlText.Substring(1, xmlText.Length - 1);
-                source_xml.LoadXml(xmlText);
+                string srcText = Encoding.UTF8.GetString(ReadBundleAssetData(source_path));
+                srcText = srcText.Substring(1, srcText.Length - 1);
+                src = XDocument.Parse(srcText);
             } else if (source_path.EndsWith(".xml"))
             {
-                source_xml.Load(source_path);
+                src = XDocument.Load(source_path);
             } else if (source_path.EndsWith(".xlsx"))
             {
-                xmlText = Encoding.UTF8.GetString(Xlsx2Xml(source_path));
-                xmlText = xmlText.Substring(1, xmlText.Length - 1);
-                source_xml.LoadXml(xmlText);
-            }
-            XmlNode dataSrc = source_xml.DocumentElement.SelectSingleNode("/Book/Sheet/Data");
-            XmlNode dataTgt = target_xml.DocumentElement.SelectSingleNode("/Book/Sheet/Data");
-            Dictionary<string, XmlNode> dict = new Dictionary<string, XmlNode>();
-            foreach (XmlNode param in dataTgt.ChildNodes)
+                string srcText = Encoding.UTF8.GetString(Xlsx2Xml(source_path));
+                srcText = srcText.Substring(1, srcText.Length - 1);
+                src = XDocument.Parse(srcText);
+            } else
             {
-                dict.Add(param.Attributes[1].Value, param);
+                throw new Exception("source file not supported");
             }
-            foreach (XmlNode param in dataSrc.ChildNodes)
+            Dictionary<string, string> idCache = new Dictionary<string, string>();
+            foreach (string id in ids) { idCache.Add(id, ""); }
+
+            foreach(XElement srcSheet in src.Root.Elements("Sheet"))
             {
-                if (dict.ContainsKey(param.Attributes[1].Value))
+                var tgtSheet = tgt.Root.Elements("Sheet").Where(sheet=>sheet.Attribute("Name").Value==srcSheet.Attribute("Name").Value).FirstOrDefault();
+                if (tgtSheet == null) continue;
+
+                Dictionary<string, XElement> dict = new Dictionary<string, XElement>();
+                foreach (XElement param in tgtSheet.Element("Data").Elements())
                 {
-                    if (overwrite)
-                    {
-                        foreach (XmlAttribute attr in dict[param.Attributes[1].Value].Attributes)
+
+                    dict.Add(string.Join(",", ids.Select(id => {
+                        if (param.Attribute(id).Value == "")
                         {
-                            attr.Value = param.Attributes[attr.Name].Value;
+                            return idCache[id];
+                        } else
+                        {
+                            idCache[id] = param.Attribute(id).Value;
+                            return param.Attribute(id).Value;
+                        }
+                    })), param);
+                }
+
+                ids.Select(id => idCache[id] = "");
+                foreach (XElement param in srcSheet.Element("Data").Elements())
+                {
+                    string key = string.Join(",", ids.Select(id =>
+                    {
+                        if (param.Attribute(id).Value == "")
+                        {
+                            return idCache[id];
+                        }
+                        else
+                        {
+                            idCache[id] = param.Attribute(id).Value;
+                            return param.Attribute(id).Value;
+                        }
+                    }));
+                    if (dict.ContainsKey(key))
+                    {
+                        if (overwrite)
+                        {
+                            dict[key].ReplaceAttributes(param.Attributes());
                         }
                     }
-                } else
-                {
-                    dataTgt.AppendChild(target_xml.ImportNode(param, false));
-                } 
+                    else
+                    {
+                        tgtSheet.Element("Data").Add(param);
+                    }
+                }
+
             }
 
             using (MemoryStream ms = new MemoryStream())
             {
-                target_xml.Save(ms);
+                tgt.Save(ms);
                 updatedBytes = ms.ToArray();
             }
 
@@ -377,6 +418,7 @@ namespace EngageXml
                 line = sr.ReadLine();
                 while (line != null) 
                 {
+                    line = line.Replace("\\n", "\n");
                     kv = line.Split(',');
                     key = kv[0].Trim();
                     value = kv[1].Trim();
