@@ -17,3 +17,4 @@ D:\Developer\EngageXml\EngageXml\bin\Debug\Mono.Cecil.dll
 D:\Developer\EngageXml\EngageXml\bin\Debug\Mono.Cecil.Mdb.dll
 D:\Developer\EngageXml\EngageXml\bin\Debug\Mono.Cecil.Pdb.dll
 D:\Developer\EngageXml\EngageXml\bin\Debug\Mono.Cecil.Rocks.dll
+D:\Developer\EngageXml\EngageXml\obj\Debug\EngageXml.csproj.SuggestedBindingRedirects.cache

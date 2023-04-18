@@ -1131,5 +1131,42 @@ namespace EngageXml
 
 			return result;
 		}
+
+		public void UpdateWithCSV(string csvPath)
+		{
+            using (var fs = new FileStream(csvPath, FileMode.Open))
+            using (var sr = new StreamReader(fs))
+            {
+                string[] kv;
+                string line, key, value;
+                line = sr.ReadLine();
+                while (line != null)
+                {
+                    line = line.Replace("\\n", "\n");
+                    kv = line.Split(',');
+                    key = kv[0].Trim();
+                    value = kv[1].Trim();
+                    if (key.Length <= LabelMaxLength && Regex.IsMatch(key, LabelFilter))
+                    {
+                        Label lbl = HasLabel(key);
+                        if (lbl == null) lbl = AddLabel(key);
+                        if (value == "")
+                        {
+                            RemoveLabel(lbl);
+                        }
+                        else
+                        {
+                            IEntry ent = TXT2.Strings[(int)lbl.Index];
+                            ent.Value = FileEncoding.GetBytes(value.Replace("\r\n", "\n") + "\0");
+                        }
+                    }
+                    else
+                    {
+                        throw new Exception("Invalid Label!");
+                    }
+                    line = sr.ReadLine();
+                }
+            }
+        }
 	}
 }

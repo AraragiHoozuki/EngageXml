@@ -1,15 +1,19 @@
 ﻿using AssetsTools.NET;
 using AssetsTools.NET.Extra;
+using Mono.Cecil;
+using Mono.Cecil.Cil;
 using OfficeOpenXml;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices.WindowsRuntime;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Xml;
 using System.Xml.Linq;
+using System.Xml.XPath;
 
 namespace EngageXml
 {
@@ -20,7 +24,90 @@ namespace EngageXml
         {
             if (args.Length < 1)
             {
-                throw new Exception("Please excute this program with arguments.");
+                if (File.Exists("Config.xml"))
+                {
+                    EConfig conf = new EConfig("Config.xml");
+                    foreach ( var file in conf.FilePatches)
+                    {
+                        string source = file.Attribute("source").Value;
+                        string target = file.Attribute("target").Value;
+                        if (source == "" || target == "") continue;
+
+                        Console.Write($"Processing ");
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.Write(source);
+                        Console.ForegroundColor = ConsoleColor.Blue;
+                        Console.Write("->");
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.Write(target);
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.WriteLine();
+
+                        switch (Path.GetExtension(source)) {
+                            case ".xml":
+                                BundleIO.InsertAsset(File.ReadAllBytes(source), target);
+                                break;
+                            case ".xlsx":
+                                BundleIO.InsertAsset(EXML.FromXlsx(source).ToBinary(), target);
+                                break;
+                            case ".csv":
+                                byte[] data = BundleIO.ReadBundleAssetData(target);
+                                MSBT msbt = new MSBT(data);
+                                msbt.UpdateWithCSV(source);
+                                BundleIO.InsertAsset(msbt.Binarize(), target);
+                                break;
+                            default:
+                                Console.WriteLine($"Skipped file {source}, whose format is not supported, ");
+                                break;
+                        }
+                    }
+
+                    foreach ( var patch in conf.ParamPatches)
+                    {
+                        string target_file = patch.Attribute("target_file").Value;
+                        string target_path = patch.Attribute("target_path").Value;
+                        string[] ids = patch.Attribute("IDAttributes").Value.Split(';');
+                        if (string.IsNullOrEmpty(target_file) || string.IsNullOrEmpty(target_path)) continue;
+
+                        Console.Write($"Processing ");
+                        Console.ForegroundColor = ConsoleColor.Green;
+                        Console.Write(target_file);
+                        Console.ForegroundColor = ConsoleColor.White;
+                        Console.WriteLine();
+
+                        EXML exml = new EXML(BundleIO.ReadBundleAssetData(target_file));
+                        XElement container = exml.GetElementByPath(target_path);
+                        foreach( var param in patch.Elements())
+                        {
+                            Console.Write($"\tWriting ");
+                            Console.ForegroundColor = ConsoleColor.Green;
+                            Console.Write(param);
+                            Console.ForegroundColor = ConsoleColor.White;
+                            Console.WriteLine();
+                            if (ids.Length > 0)
+                            {
+                                var ps = from p in container.Elements()
+                                where ids.Select(id => p.Attribute(id).Value).SequenceEqual(ids.Select(id => param.Attribute(id).Value))
+                                select p;
+                                if (ps.Count() > 0)
+                                {
+                                    foreach (var attr in ps.First().Attributes())
+                                    {
+                                        attr.Value = param.Attribute(attr.Name).Value;
+                                    }
+                                }
+                                else { container.Add(param); }
+                            } else{ container.Add(param);}
+                        }
+                        BundleIO.InsertAsset(exml.ToBinary(), target_file);
+                    }
+                    Console.WriteLine("Patch Complete! Press any key to exit");
+                    Console.ReadKey();
+                    return;
+                } else
+                {
+                    throw new Exception("Config file not found");
+                }
             }
             string arg1 = args[0];
             AM = new AssetsManager();
