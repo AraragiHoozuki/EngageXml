@@ -1,4 +1,4 @@
-﻿using AssetsTools.NET;
+using AssetsTools.NET;
 using AssetsTools.NET.Extra;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
@@ -500,15 +500,14 @@ namespace EngageXml
             using (var fs = new FileStream(csvPath, FileMode.Open))
             using (var sr = new StreamReader(fs))
             {
-                string[] kv;
-                string line, key, value;
-                line = sr.ReadLine();
-                while (line != null) 
+                string line = null;
+                while ((line = MSBT.ReadRN(sr))!=null) 
                 {
                     line = line.Replace("\\n", "\n");
-                    kv = line.Split(',');
-                    key = kv[0].Trim();
-                    value = kv[1].Trim();
+                    int dotIndx = line.IndexOf(",");
+
+                    string key = line.Substring(0, dotIndx).Trim();
+                    string value = line.Substring(dotIndx + 1).Trim();
                     if (key.Length <= MSBT.LabelMaxLength && Regex.IsMatch(key, MSBT.LabelFilter))
                     {
                         Label lbl = msbt.HasLabel(key);
@@ -526,7 +525,6 @@ namespace EngageXml
                     {
                         throw new Exception("Invalid Label!");
                     }
-                    line = sr.ReadLine();
                 }
             }
             AM.UnloadBundleFile(bundlePath);
