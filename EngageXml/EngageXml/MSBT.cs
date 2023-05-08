@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -1137,15 +1137,14 @@ namespace EngageXml
             using (var fs = new FileStream(csvPath, FileMode.Open))
             using (var sr = new StreamReader(fs))
             {
-                string[] kv;
-                string line, key, value;
-                line = sr.ReadLine();
-                while (line != null)
+                string line = null;
+                while ((line = ReadRN(sr)) !=null)
                 {
                     line = line.Replace("\\n", "\n");
-                    kv = line.Split(',');
-                    key = kv[0].Trim();
-                    value = kv[1].Trim();
+                    int dotIndx = line.IndexOf(",");
+
+                    string key = line.Substring(0, dotIndx).Trim();
+                    string value = line.Substring(dotIndx + 1).Trim();
                     if (key.Length <= LabelMaxLength && Regex.IsMatch(key, LabelFilter))
                     {
                         Label lbl = HasLabel(key);
@@ -1164,9 +1163,45 @@ namespace EngageXml
                     {
                         throw new Exception("Invalid Label!");
                     }
-                    line = sr.ReadLine();
                 }
             }
+        }
+
+
+        public static string ReadRN(StreamReader sr)
+        {
+            string tmp = "";
+            int c = 0;
+            while( (c = sr.Read()) !=-1)
+            {
+               char chr = Convert.ToChar(c);
+                if(chr != '\r')
+                {
+                    tmp += chr;
+                }
+                else
+                {
+                    c = sr.Read();
+                    if(c == -1)
+                    {
+                        tmp += '\r';
+                        break;
+                    }else if(c == '\n')
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        tmp += '\r' + Convert.ToChar(c);
+                    }
+                }
+            }
+
+            if(tmp == "")
+            {
+                tmp = null;
+            }
+            return tmp;
         }
 	}
 }
